@@ -324,10 +324,9 @@ class DefaultConcretizer(object):
                 spec.compiler in all_compilers):
             return False
 
-        # Find the another spec that has a compiler, or the root if none do
+        # Find another spec that has a compiler, or the root if none do
         other_spec = spec if spec.compiler else find_spec(
             spec, lambda x: x.compiler)
-
         if not other_spec:
             other_spec = spec.root
         other_compiler = other_spec.compiler
@@ -338,18 +337,22 @@ class DefaultConcretizer(object):
             spec.compiler = other_compiler.copy()
             return True
 
-        # Filter the compilers into a sorted list based on the compiler_order
-        # from spackconfig
-        compiler_list = all_compilers if not other_compiler else \
-            spack.compilers.find(other_compiler)
-        cmp_compilers = partial(
-            pkgsort().compiler_compare, other_spec.name)
-        matches = sorted(compiler_list, cmp=cmp_compilers)
+        # Sort compilers based on order in spack configuration
+        compiler_list = (all_compilers if not other_compiler
+                         else spack.compilers.find(other_compiler))
+
+        # Use the order defined for our reference spec.
+        order = [spack.spec.CompilerSpec(s) for s in
+                 pkgsort().order_for_package(other_spec.name, 'compiler')]
+        def okey(c):
+            return next((i for i, oc in enumerate(order) if c.satisfies(oc)),
+                        len(order))
+        matches = sorted(compiler_list, key=okey)
+
+        arch = spec.architecture
         if not matches:
-            arch = spec.architecture
-            raise UnavailableCompilerVersionError(other_compiler,
-                                                  arch.platform_os,
-                                                  arch.target)
+            raise UnavailableCompilerVersionError(
+                other_compiler, arch.platform_os, arch.target)
 
         # copy concrete version into other_compiler
         try:
@@ -358,9 +361,7 @@ class DefaultConcretizer(object):
                 if _proper_compiler_style(c, spec.architecture)).copy()
         except StopIteration:
             raise UnavailableCompilerVersionError(
-                spec.compiler, spec.architecture.platform_os,
-                spec.architecture.target
-            )
+                spec.compiler, arch.platform_os, arch.target)
 
         assert(spec.compiler.concrete)
         return True  # things changed.
@@ -469,7 +470,6 @@ def find_spec(spec, condition):
 
 
 class UnavailableCompilerVersionError(spack.error.SpackError):
-
     """Raised when there is no available compiler that satisfies a
        compiler spec."""
 
@@ -482,7 +482,6 @@ class UnavailableCompilerVersionError(spack.error.SpackError):
 
 
 class NoValidVersionError(spack.error.SpackError):
-
     """Raised when there is no way to have a concrete version for a
        particular spec."""
 
