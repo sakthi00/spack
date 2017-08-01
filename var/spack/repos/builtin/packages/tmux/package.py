@@ -23,7 +23,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 ##############################################################################
 from spack import *
-
+import os
 
 class Tmux(Package):
     """Tmux is a terminal multiplexer.
@@ -47,6 +47,7 @@ class Tmux(Package):
 
     def install(self, spec, prefix):
         pkg_config_path = ':'.join([
+            os.environ['PKG_CONFIG_PATH'],
             spec['libevent'].prefix,
             spec['ncurses'].prefix
         ])
