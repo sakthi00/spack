@@ -25,26 +25,15 @@
 from spack import *
 
 
-class Szip(AutotoolsPackage):
-    """Szip is an implementation of the extended-Rice lossless
-     compression algorithm.
+class Vsearch(AutotoolsPackage):
+    """VSEARCH is a versatile open-source tool for metagenomics."""
 
-    It provides lossless compression of scientific data, and is
-    provided with HDF software products.
-    """
+    homepage = "https://github.com/torognes/vsearch"
+    url      = "https://github.com/torognes/vsearch/archive/v2.4.3.tar.gz"
 
-    homepage = "https://support.hdfgroup.org/doc_resource/SZIP/"
-    url      = "https://support.hdfgroup.org/ftp/lib-external/szip/2.1.1/src/szip-2.1.1.tar.gz"
-    list_url = "https://support.hdfgroup.org/ftp/lib-external/szip"
-    list_depth = 2
+    version('2.4.3', '8f57210fe447a781078fde06e6402650')
 
-    version('2.1.1', 'dd579cf0f26d44afd10a0ad7291fc282')
-    version('2.1',   '902f831bcefb69c6b635374424acbead')
-
-    def configure_args(self):
-        return [
-            '--enable-production',
-            '--enable-shared',
-            '--enable-static',
-            '--enable-encoding',
-        ]
+    depends_on('m4',       type='build')
+    depends_on('autoconf', type='build')
+    depends_on('automake', type='build')
+    depends_on('libtool',  type='build')

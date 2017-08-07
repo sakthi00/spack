@@ -155,9 +155,9 @@ def set_color_when(when):
 def color_when(value):
     """Context manager to temporarily use a particular color setting."""
     old_value = value
-    set_color(value)
+    set_color_when(value)
     yield
-    set_color(old_value)
+    set_color_when(old_value)
 
 
 class match_to_ansi(object):
@@ -218,24 +218,7 @@ def colorize(string, **kwargs):
     return re.sub(color_re, match_to_ansi(color), string)
 
 
-def clen(string):
-    """Return the length of a string, excluding ansi color sequences."""
-    return len(re.sub(r'\033[^m]*m', '', string))
 
-
-def cextra(string):
-    """"Length of extra color characters in a string"""
-    return len(''.join(re.findall(r'\033[^m]*m', string)))
-
-
-def cwrite(string, stream=sys.stdout, color=None):
-    """Replace all color expressions in string with ANSI control
-       codes and write the result to the stream.  If color is
-       False, this will write plain text with o color.  If True,
-       then it will always write colored output.  If not supplied,
-       then it will be set based on stream.isatty().
-    """
-    if color is None:
         color = get_color_when()
     stream.write(colorize(string, color=color))
 
