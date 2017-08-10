@@ -56,10 +56,10 @@ packages:
     netcdf:
         buildable: false
         modules:
-            netcdf@4.4.1.1.3%gcc+parallel-netcdf: cray-netcdf-hdf5parallel
-            netcdf@4.4.1.1.3%intel+parallel-netcdf: cray-netcdf-hdf5parallel
-            netcdf@4.4.1.1.3%gcc~parallel-netcdf: cray-netcdf
-            netcdf@4.4.1.1.3%intel~parallel-netcdf: cray-netcdf
+            netcdf@4.4.1.1.3%gcc+parallel-netcdf+mpi: cray-netcdf-hdf5parallel
+            netcdf@4.4.1.1.3%intel+parallel-netcdf+mpi: cray-netcdf-hdf5parallel
+            netcdf@4.4.1.1.3%gcc~parallel-netcdf~mpi: cray-netcdf
+            netcdf@4.4.1.1.3%intel~parallel-netcdf~mpi: cray-netcdf
     python:
         buildable: false
         modules:
