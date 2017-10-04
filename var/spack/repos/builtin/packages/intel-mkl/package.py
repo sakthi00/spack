@@ -82,7 +82,14 @@ class IntelMkl(IntelPackage):
         spec = self.spec
         prefix = self.prefix
         shared = '+shared' in spec
-
+        compilers_and_libraries = "compilers_and_libraries_{0}".format(
+                self.spec.version)
+        intel_mklroot = os.path.join(prefix,
+                                     compilers_and_libraries,
+                                     "linux",
+                                     "mkl",
+                                     "lib",
+                                     "intel64")
         if '+ilp64' in spec:
             mkl_integer = ['libmkl_intel_ilp64']
         else:
@@ -98,7 +105,7 @@ class IntelMkl(IntelPackage):
                 omp_threading = ['libiomp5']
 
                 if sys.platform != 'darwin':
-                    omp_root = prefix.compilers_and_libraries.linux.lib.intel64
+                    omp_root = intel_mklroot
                 else:
                     omp_root = prefix.lib
                 omp_libs = find_libraries(
@@ -114,7 +121,7 @@ class IntelMkl(IntelPackage):
         # TODO: TBB threading: ['libmkl_tbb_thread', 'libtbb', 'libstdc++']
 
         if sys.platform != 'darwin':
-            mkl_root = prefix.compilers_and_libraries.linux.mkl.lib.intel64
+            mkl_root = intel_mklroot
         else:
             mkl_root = prefix.mkl.lib
 
@@ -139,7 +146,8 @@ class IntelMkl(IntelPackage):
     @property
     def scalapack_libs(self):
         libnames = ['libmkl_scalapack']
-
+        compilers_and_libraries = "compilers_and_libraries_{0}".format(
+                self.spec.version)
         # Intel MKL does not directly depend on mpi but the scalapack
         # interface does and the corresponding  BLACS library changes
         # depending on the MPI implementation we are using. We need then to
@@ -166,7 +174,13 @@ class IntelMkl(IntelPackage):
 
         integer = 'ilp64' if '+ilp64' in self.spec else 'lp64'
         mkl_root = self.prefix.mkl.lib if sys.platform == 'darwin' else \
-            self.prefix.compilers_and_libraries.linux.mkl.lib.intel64
+                os.path.join(self.prefix,
+                             compilers_and_libraries,
+                             "linux",
+                             "mkl",
+                             "lib",
+                             "intel64")
+
 
         shared = True if '+shared' in self.spec else False
 
@@ -175,7 +189,6 @@ class IntelMkl(IntelPackage):
             root=mkl_root,
             shared=shared
         )
-
         return libs
 
     def setup_dependent_environment(self, spack_env, run_env, dependent_spec):

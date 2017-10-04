@@ -52,7 +52,7 @@ class Libxc(Package):
         # Libxc installs both shared and static libraries.
         # If a client ask for static explicitly then return
         # the static libraries
-        shared = False if 'static' in query_parameters else True
+        shared = True if 'shared' in query_parameters else False
 
         # Libxc has a fortran90 interface: give clients the
         # possibility to query for it
