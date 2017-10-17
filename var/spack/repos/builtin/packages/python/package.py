@@ -133,6 +133,9 @@ class Python(AutotoolsPackage):
         spack_env.set('PYTHONPATH', prefix)
         spack_env.set('MACOSX_DEPLOYMENT_TARGET', platform.mac_ver()[0])
 
+        # Need this to properly build python on Cray without static linking
+        spack_env.set("CRAYPE_LINK_TYPE", "dynamic")
+
     def configure_args(self):
         spec = self.spec
 
