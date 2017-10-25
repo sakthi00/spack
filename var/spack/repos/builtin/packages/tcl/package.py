@@ -49,6 +49,8 @@ class Tcl(AutotoolsPackage):
     def setup_environment(self, spack_env, run_env):
         # When using Tkinter from within spack provided python+tk, python
         # will not be able to find Tcl/Tk unless TCL_LIBRARY is set.
+        spack_env.set("CRAYPE_LINK_TYPE", "dynamic")
+
         run_env.set('TCL_LIBRARY', join_path(self.prefix.lib, 'tcl{0}'.format(
             self.spec.version.up_to(2))))
 

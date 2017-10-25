@@ -27,6 +27,7 @@ import os
 import platform
 import shutil
 import sys
+from spack.util.module_cmd import load_module
 from spack import *
 
 
@@ -56,7 +57,7 @@ class Charm(Package):
     variant(
         'backend',
         default='mpi',
-        values=('mpi', 'multicore', 'net', 'netlrts', 'verbs'),
+        values=('mpi', 'multicore', 'net', 'netlrts', 'verbs', 'gni'),
         description='Set the backend to use'
     )
 
@@ -70,21 +71,36 @@ class Charm(Package):
     variant("tcp", default=False,
             description="Use TCP as transport mechanism (requires +net)")
     variant("shared", default=True, description="Enable shared link support")
+    variant("production",
+            default=True,
+            description="build charm with all optmizations for max performance")
+
+    # Platform specific options
+    variant("async",
+            default=False,
+            description="For BGQ this option enables use of hardware communication threads")
+    variant("regularpages",
+            default=False,
+            description="Charm++'s default is to use hugepages. Option disables")
+    variant("persistent",
+            default=False,
+            description="Enables use of persistent mode for communication")
 
     # Note: We could add variants for AMPI, LIBS, bigemulator, msa, Tau
-
     depends_on('mpi', when='backend=mpi')
     depends_on("papi", when="+papi")
+
+    @when("~regularpages platform=cray")
+    def setup_environment(self, spack_env, run_env):
+        load_module("craype-hugepages8M")
+
 
     def install(self, spec, prefix):
         target = "charm++"
 
+        plat = spec.architecture.platform
+        mach = "any" if plat == "cray" else spec.architecture.target
         comm = spec.variants['backend'].value
-
-        plat = sys.platform
-        if plat.startswith("linux"):
-            plat = "linux"
-        mach = platform.machine()
 
         # Define Charm++ version names for various (plat, mach, comm)
         # combinations. Note that not all combinations are supported.
@@ -104,7 +120,14 @@ class Charm(Package):
             ("linux", "x86_64", "net"): "net-linux-x86_64",
             ("linux", "x86_64", "netlrts"): "netlrts-linux-x86_64",
             ("linux", "x86_64", "verbs"): "verbs-linux-x86_64",
+            ("cray", "any", "gni"):  "gni-crayxc",
+            ("cray", "any", "mpi"): "mpi-crayxc",
         }
+
+        compiler_mapping = {"intel": "icc",
+                            "gcc": "gcc",
+                            "cce": "craycc"}
+
         if (plat, mach, comm) not in versions:
             raise InstallError(
                 "The communication mechanism %s is not supported "
@@ -115,14 +138,16 @@ class Charm(Package):
         # We assume that Spack's compiler wrappers make this work. If
         # not, then we need to query the compiler vendor from Spack
         # here.
-        compiler = os.path.basename(self.compiler.cc)
 
-        options = [compiler]
+        if plat == "cray":
+            compiler = compiler_mapping[spec.compiler.name]
+        else:
+            compiler = os.path.basename(self.compiler.cc)
+        options = []
         if compiler == 'icc':
             options.append('ifort')
 
         options.extend([
-            "--with-production",   # Note: turn this into a variant
             "-j%d" % make_jobs,
             "--destination=%s" % prefix])
 
@@ -155,6 +180,22 @@ class Charm(Package):
             options.append("tcp")
         if "+shared" in spec:
             options.append("--build-shared")
+
+        if "+production" in spec:
+            options.append("--with-production")
+
+        if "+async" in spec:
+            if plat != "bgq":
+                raise InstallError("*async is Blue Gene/Q specific")
+            options.append("async")
+        elif "+regularpages" in spec:
+            if plat != "cray":
+                raise InstallError("*regularpages is a Cray specific option")
+            options.append("regularpages")
+        elif "+persistent" in spec:
+            if plat != "cray":
+                raise InstallError("*persistent is a Cray specific option")
+            options.append("persistent")
 
         # Call "make" via the build script
         # Note: This builds Charm++ in the "tmp" subdirectory of the
